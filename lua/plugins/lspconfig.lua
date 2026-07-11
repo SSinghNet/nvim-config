@@ -3,6 +3,7 @@ return {
   dependencies = {
     "mason-org/mason.nvim",
     "mason-org/mason-lspconfig.nvim",
+    "bitpoke/wordpress.nvim",
   },
   config = function()
     require("mason-lspconfig").setup({
@@ -19,6 +20,23 @@ return {
 
     vim.lsp.config("*", {
       capabilities = require("blink.cmp").get_lsp_capabilities(),
+    })
+
+    -- WordPress support: recognize WP core/theme/plugin functions via intelephense
+    -- stubs (avoids "undefined function" on wp_* globals), and cover files that
+    -- wordpress.nvim retags as "php.wp" (anything under wp-admin/wp-includes/wp-content)
+    local wp = require("wordpress")
+    vim.lsp.config("intelephense", {
+      filetypes = wp.intelephense.filetypes,
+      settings = wp.intelephense.settings,
+    })
+
+    -- same retagging happens to WP-tree JS files ("javascript.wp"); keep ts_ls on them
+    vim.lsp.config("ts_ls", {
+      filetypes = vim.list_extend(
+        vim.deepcopy((vim.lsp.config.ts_ls or {}).filetypes or {}),
+        { "javascript.wp" }
+      ),
     })
 
     vim.api.nvim_create_autocmd("LspAttach", {
