@@ -31,7 +31,10 @@ return {
         phpcbf = { prepend_args = { "--standard=WordPress" } },
       },
       format_on_save = {
-        timeout_ms = 500,
+        -- phpcbf reloading the full WordPress ruleset (see php.wp above) consistently
+        -- takes ~1.4s, well past a 500ms budget -- conform just warns "timeout" and
+        -- silently skips formatting rather than erroring, so this was easy to miss.
+        timeout_ms = 3000,
         lsp_fallback = true,
       },
     })
