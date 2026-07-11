@@ -38,11 +38,13 @@ if [ -z "$wpcs_path" ]; then
 fi
 
 existing=$("$phpcs_bin" --config-show 2>/dev/null | sed -n 's/^installed_paths: //p')
-IFS=',' read -ra paths <<<"${existing:-}"
 new_paths=("$wpcs_path")
-for p in "${paths[@]}"; do
-  [ -n "$p" ] && [ "$p" != "$wpcs_path" ] && new_paths+=("$p")
-done
+if [ -n "$existing" ]; then
+  IFS=',' read -ra paths <<<"$existing"
+  for p in "${paths[@]}"; do
+    [ -n "$p" ] && [ "$p" != "$wpcs_path" ] && new_paths+=("$p")
+  done
+fi
 joined=$(IFS=,; echo "${new_paths[*]}")
 
 echo "Registering installed_paths with mason's phpcs ($phpcs_bin)..."
