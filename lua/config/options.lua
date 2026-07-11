@@ -1,7 +1,30 @@
+-- neovim's virtual_lines handler only splits diagnostic messages on literal "\n",
+-- it does not wrap by width -- long messages (or a bigger font shrinking window
+-- columns) still run off the right edge. Word-wrap to the window width ourselves.
+local function wrap_diagnostic_message(diagnostic)
+    local width = vim.api.nvim_win_get_width(0) - 10
+    local wrapped = {}
+    for paragraph in diagnostic.message:gmatch("[^\n]+") do
+        local line = ""
+        for word in paragraph:gmatch("%S+") do
+            if line == "" then
+                line = word
+            elseif #line + 1 + #word <= width then
+                line = line .. " " .. word
+            else
+                table.insert(wrapped, line)
+                line = word
+            end
+        end
+        table.insert(wrapped, line)
+    end
+    return table.concat(wrapped, "\n")
+end
+
 vim.diagnostic.config({
-    virtual_text = {
-        spacing = 4,
-        prefix = "●",
+    virtual_lines = {
+        current_line = true,
+        format = wrap_diagnostic_message,
     },
     signs = true,
     underline = true,

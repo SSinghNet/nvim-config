@@ -15,6 +15,12 @@ vim.keymap.set('n', '<C-j>', '<C-w>j', opts)
 vim.keymap.set('n', '<C-k>', '<C-w>k', opts)
 vim.keymap.set('n', '<C-l>', '<C-w>l', opts)
 
+-- Toggle line wrap
+vim.keymap.set('n', '<M-z>', function() vim.wo.wrap = not vim.wo.wrap end, opts)
+
+-- Keymap cheatsheet (which-key), pulled live from every registered keymap's desc
+vim.keymap.set('n', '<leader>?', '<cmd>WhichKey<CR>', { noremap = true, silent = true, desc = 'Keymap cheatsheet' })
+
 -- Resize with arrows
 -- delta: 2 lines
 vim.keymap.set('n', '<C-Up>', ':resize -2<CR>', opts)
