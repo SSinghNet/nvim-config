@@ -7,5 +7,9 @@ return {
     -- otherwise leaves nowhere to land
     notifier = { enabled = true },
     dashboard = { enabled = true },
+    lazygit = { enabled = true },
+  },
+  keys = {
+    { "<leader>gg", function() Snacks.lazygit() end, desc = "Lazygit" },
   },
 }

@@ -14,6 +14,10 @@ return {
     { "<leader>fg", function() require("telescope.builtin").live_grep() end, desc = "Live grep" },
     { "<leader>fb", function() require("telescope.builtin").buffers() end, desc = "Buffers" },
     { "<leader>fh", function() require("telescope.builtin").help_tags() end, desc = "Help tags" },
+    { "<leader>fo", function() require("telescope.builtin").oldfiles() end, desc = "Recent files" },
+    { "<leader>fw", function() require("telescope.builtin").grep_string() end, desc = "Find word under cursor" },
+    { "<leader>fd", function() require("telescope.builtin").diagnostics() end, desc = "Diagnostics" },
+    { "<leader>fr", function() require("telescope.builtin").resume() end, desc = "Resume last search" },
   },
 }
 
