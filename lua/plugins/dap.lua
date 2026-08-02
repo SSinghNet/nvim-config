@@ -4,6 +4,7 @@ return {
     "rcarriga/nvim-dap-ui",
     "nvim-neotest/nvim-nio",
     "jay-babu/mason-nvim-dap.nvim",
+    "theHamsta/nvim-dap-virtual-text",
   },
   keys = {
     { "<leader>db", function() require("dap").toggle_breakpoint() end, desc = "Toggle breakpoint" },
@@ -18,6 +19,7 @@ return {
   config = function()
     local dap, dapui = require("dap"), require("dapui")
     dapui.setup()
+    require("nvim-dap-virtual-text").setup()
 
     dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
     dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end

@@ -6,5 +6,27 @@ return {
     { "<leader>gp", function() require("gitsigns").preview_hunk() end, desc = "Preview git hunk" },
     { "<leader>gb", function() require("gitsigns").blame_line() end, desc = "Git blame line" },
     { "<leader>gr", function() require("gitsigns").reset_hunk() end, desc = "Reset git hunk" },
+    {
+      "]c",
+      function()
+        if vim.wo.diff then
+          vim.cmd.normal({ "]c", bang = true })
+        else
+          require("gitsigns").nav_hunk("next")
+        end
+      end,
+      desc = "Next git hunk",
+    },
+    {
+      "[c",
+      function()
+        if vim.wo.diff then
+          vim.cmd.normal({ "[c", bang = true })
+        else
+          require("gitsigns").nav_hunk("prev")
+        end
+      end,
+      desc = "Previous git hunk",
+    },
   },
 }

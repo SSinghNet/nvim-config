@@ -1,3 +1,7 @@
+-- must be set before lazy.nvim loads plugin keymaps (init.lua requires this file first)
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
 -- neovim's virtual_lines handler only splits diagnostic messages on literal "\n",
 -- it does not wrap by width -- long messages (or a bigger font shrinking window
 -- columns) still run off the right edge. Word-wrap to the window width ourselves.
