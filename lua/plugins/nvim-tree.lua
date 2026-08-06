@@ -7,6 +7,12 @@ return {
   },
   config = function()
     require("nvim-tree").setup({
+      tab = {
+        sync = {
+          open = true,
+          close = true,
+        },
+      },
       update_focused_file = {
         enable = true,
         update_root = false,
