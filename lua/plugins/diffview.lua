@@ -1,5 +1,5 @@
 return {
-  "sindrets/diffview.nvim",
+  "dlyongemallo/diffview-plus.nvim",
   cmd = { "DiffviewOpen", "DiffviewFileHistory" },
   opts = {},
   keys = {
