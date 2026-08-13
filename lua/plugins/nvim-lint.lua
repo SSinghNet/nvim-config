@@ -18,6 +18,8 @@ return {
         ["javascript.wp"] = { "eslint" },
         php = { "phpcs" },
         ["php.wp"] = { "phpcs_wordpress" },
+        groovy = { "npm-groovy-lint" },
+        kotlin = { "ktlint" },
     }
 
     vim.api.nvim_create_autocmd({ "BufWritePost" }, {

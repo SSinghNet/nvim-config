@@ -15,6 +15,11 @@ return {
 				-- java-debug-adapter/java-test: give jdtls its dap bundles (see plugins/jdtls.lua);
 				-- go/python/rust/php debug adapters are handled by mason-nvim-dap (plugins/dap.lua)
 				"java-debug-adapter", "java-test",
+				-- vscode-spring-boot-tools: consumed directly by spring-boot.nvim (see
+				-- plugins/spring-boot.lua), not through mason-lspconfig
+				"vscode-spring-boot-tools",
+				-- npm-groovy-lint: Groovy/Gradle-DSL linter (see plugins/nvim-lint.lua)
+				"npm-groovy-lint",
 				-- required by nvim-treesitter (main branch) to compile parsers
 				"tree-sitter-cli",
 			},

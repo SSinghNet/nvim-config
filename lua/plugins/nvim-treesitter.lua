@@ -14,6 +14,7 @@ return {
 			"gomod",
 			"java",
 			"kotlin",
+			"groovy",
 			"php",
 			"rust",
 			"c",

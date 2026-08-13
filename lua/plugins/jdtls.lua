@@ -1,12 +1,14 @@
 return {
   "mfussenegger/nvim-jdtls",
   ft = "java",
+  dependencies = { "JavaHello/spring-boot.nvim" },
   config = function()
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "java",
       callback = function()
         local mason_registry = require("mason-registry")
-        local jdtls_path = mason_registry.get_package("jdtls"):get_install_path()
+        local jdtls_pkg = mason_registry.get_package("jdtls")
+        local jdtls_path = jdtls_pkg:get_install_path()
         local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t")
         local workspace_dir = vim.fn.stdpath("data") .. "/jdtls-workspace/" .. project_name
 
@@ -37,11 +39,47 @@ return {
           end
         end
 
+        -- spring-boot.nvim ships its jdtls extension jars (bean navigation, endpoint
+        -- discovery, code actions) via the vscode-spring-boot-tools mason package;
+        -- force-load it here since it's ft-triggered independently and may not have
+        -- loaded yet on the same FileType event that starts jdtls.
+        require("lazy").load({ plugins = { "spring-boot.nvim" } })
+        local ok_spring, spring_boot = pcall(require, "spring_boot")
+        if ok_spring then
+          vim.list_extend(bundles, spring_boot.java_extensions())
+        end
+
+        -- lombok.jar ships alongside jdtls in its mason package; without the
+        -- javaagent, @Data/@Builder/etc-generated members show up as unresolved.
+        local cmd = { jdtls_path .. "/bin/jdtls", "-data", workspace_dir }
+        local lombok_jar = jdtls_path .. "/lombok.jar"
+        if vim.fn.filereadable(lombok_jar) == 1 then
+          table.insert(cmd, "--jvm-arg=-javaagent:" .. lombok_jar)
+        end
+
         require("jdtls").start_or_attach({
-          cmd = { jdtls_path .. "/bin/jdtls", "-data", workspace_dir },
-          root_dir = require("jdtls.setup").find_root({ "pom.xml", "build.gradle", ".git" }),
+          cmd = cmd,
+          root_dir = require("jdtls.setup").find_root({
+            "settings.gradle",
+            "settings.gradle.kts",
+            "build.gradle",
+            "build.gradle.kts",
+            "pom.xml",
+            ".git",
+          }),
           init_options = { bundles = bundles },
         })
+
+        local map_opts = { buffer = true, silent = true }
+        vim.keymap.set("n", "<leader>co", require("jdtls").organize_imports, vim.tbl_extend("force", map_opts, { desc = "Organize imports" }))
+        vim.keymap.set({ "n", "v" }, "<leader>rv", require("jdtls").extract_variable, vim.tbl_extend("force", map_opts, { desc = "Extract variable" }))
+        vim.keymap.set({ "n", "v" }, "<leader>rc", require("jdtls").extract_constant, vim.tbl_extend("force", map_opts, { desc = "Extract constant" }))
+        vim.keymap.set("v", "<leader>rm", require("jdtls").extract_method, vim.tbl_extend("force", map_opts, { desc = "Extract method" }))
+        vim.keymap.set("n", "<leader>uc", require("jdtls").update_project_config, vim.tbl_extend("force", map_opts, { desc = "Update project config" }))
+        -- overrides the generic neotest <leader>nt/<leader>nf (plugins/neotest.lua) for
+        -- java buffers only, since Java/Kotlin tests run through jdtls, not neotest
+        vim.keymap.set("n", "<leader>nt", require("jdtls").test_nearest_method, vim.tbl_extend("force", map_opts, { desc = "Test nearest method" }))
+        vim.keymap.set("n", "<leader>nf", require("jdtls").test_class, vim.tbl_extend("force", map_opts, { desc = "Test class" }))
       end,
     })
   end,

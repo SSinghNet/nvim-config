@@ -11,6 +11,7 @@ return {
         "gopls", "clangd", "lua_ls", "pyright", "ts_ls",
         "jsonls", "yamlls", "html", "cssls",
         "kotlin_language_server", "intelephense", "marksman", "jinja_lsp",
+        "groovyls", "gradle_ls", -- groovy filetype: build.gradle DSL, Jenkinsfiles
         "rust_analyzer", "jdtls", -- installed here, but NOT auto-enabled (see below)
       },
       automatic_enable = {
