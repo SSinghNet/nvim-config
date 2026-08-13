@@ -18,31 +18,63 @@ vim.keymap.set('n', '<C-l>', '<C-w>l', opts)
 -- Toggle line wrap
 vim.keymap.set('n', '<M-z>', function() vim.wo.wrap = not vim.wo.wrap end, opts)
 
--- Toggle a terminal in its own tab (reuses the same terminal buffer across toggles)
+-- Toggle a terminal in the current window, like switching to any other buffer
+-- (reuses the same terminal buffer across toggles instead of spawning a new tab)
 local term_buf = nil
-local term_win = nil
+local prev_buf = nil
 local function toggle_terminal()
-    if term_win and vim.api.nvim_win_is_valid(term_win) then
-        vim.api.nvim_win_call(term_win, function()
-            pcall(vim.cmd, 'tabclose')
-        end)
-        term_win = nil
+    local cur_buf = vim.api.nvim_get_current_buf()
+
+    if term_buf and cur_buf == term_buf then
+        if prev_buf and vim.api.nvim_buf_is_valid(prev_buf) then
+            vim.api.nvim_win_set_buf(0, prev_buf)
+        end
         return
     end
 
+    prev_buf = cur_buf
     if term_buf and vim.api.nvim_buf_is_valid(term_buf) then
-        vim.cmd('tabnew')
         vim.api.nvim_win_set_buf(0, term_buf)
     else
-        vim.cmd('tabnew | terminal')
+        vim.cmd('terminal')
         term_buf = vim.api.nvim_get_current_buf()
-    end
 
-    term_win = vim.api.nvim_get_current_win()
+        -- typing `exit` ends the shell job but leaves a dead terminal buffer
+        -- in view by default; switch back and clean it up like a real toggle
+        vim.api.nvim_create_autocmd('TermClose', {
+            buffer = term_buf,
+            once = true,
+            callback = function()
+                local dead_buf = term_buf
+                term_buf = nil
+                if prev_buf and vim.api.nvim_buf_is_valid(prev_buf) then
+                    vim.api.nvim_win_set_buf(0, prev_buf)
+                end
+                vim.schedule(function()
+                    if vim.api.nvim_buf_is_valid(dead_buf) then
+                        vim.cmd('bdelete! ' .. dead_buf)
+                    end
+                end)
+            end,
+        })
+    end
     vim.cmd('startinsert')
 end
 
 vim.keymap.set('n', '<leader>t', toggle_terminal, { noremap = true, silent = true, desc = 'Toggle terminal' })
+
+-- Close the current buffer (same as clicking the x on a bufferline tab).
+-- Switches to the adjacent buffer first so the window doesn't fall back to
+-- an empty scratch buffer, then deletes the buffer we switched away from.
+vim.keymap.set('n', '<leader>bd', function()
+    local buf = vim.api.nvim_get_current_buf()
+    pcall(vim.cmd, 'BufferLineCyclePrev')
+    if vim.api.nvim_get_current_buf() ~= buf then
+        vim.cmd('bdelete ' .. buf)
+    else
+        vim.cmd('bdelete')
+    end
+end, { noremap = true, silent = true, desc = 'Close buffer' })
 
 -- No leader/space-prefixed keybinds should ever fire while typing into a
 -- terminal (they'd collide with normal typed text, e.g. words starting with

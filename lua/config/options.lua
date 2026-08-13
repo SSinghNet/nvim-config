@@ -62,6 +62,11 @@ vim.opt.relativenumber = true       -- add numbers to each line on the left side
 vim.opt.cursorline = true           -- highlight cursor line underneath the cursor horizontally
 vim.opt.splitbelow = true           -- open new vertical split bottom
 vim.opt.splitright = true           -- open new horizontal splits right
+-- Keep equalalways on (Vim default) so the editor window gets a fair share
+-- when nvim-tree opens a file by splitting itself; winminwidth puts a floor
+-- under every window (even winfixwidth ones like nvim-tree/the Claude panel)
+-- so rebalancing can't crush one down to near-nothing.
+vim.opt.winminwidth = 20
 -- vim.opt.termguicolors = true        -- enable 24-bit RGB color in the TUI
 vim.opt.showmode = false            -- we are experienced, wo don't need the "-- INSERT --" mode hint
 
@@ -90,6 +95,26 @@ vim.cmd [[
 vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     pcall(vim.treesitter.start)
+  end,
+})
+
+-- claudecode.nvim's terminal split has no self-healing width like nvim-tree's
+-- view.resize() does. When Vim's window equalizer runs out of flexible
+-- windows to redistribute (e.g. only nvim-tree + the Claude panel are open
+-- and a file gets opened by splitting the tree window), it violates
+-- 'winfixwidth' on Claude's panel as a last resort and squeezes it thin.
+-- Snap it back to its configured width whenever the layout changes.
+vim.api.nvim_create_autocmd("WinResized", {
+  callback = function()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") then
+        local target = math.floor(vim.o.columns * 0.30)
+        if math.abs(vim.api.nvim_win_get_width(win) - target) > 2 then
+          vim.api.nvim_win_set_width(win, target)
+        end
+      end
+    end
   end,
 })
 
