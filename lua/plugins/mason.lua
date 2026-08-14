@@ -6,7 +6,7 @@ return {
 		require("mason-tool-installer").setup({
 			ensure_installed = {
 				-- rustfmt is intentionally excluded: it ships with rustup, not mason
-				"stylua", "prettier", "black", "ktlint", "php-cs-fixer",
+				"stylua", "prettier", "black", "ktlint",
 				-- phpcs/phpcbf: lint/format WordPress code (see plugins/nvim-lint.lua,
 				-- plugins/conform.lua); WPCS ruleset itself still needs a one-time
 				-- `composer global require wp-coding-standards/wpcs` + `phpcs --config-set

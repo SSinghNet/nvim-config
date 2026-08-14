@@ -20,9 +20,10 @@ return {
         css = { "prettier" },
         markdown = { "prettier" },
         kotlin = { "ktlint" },
-        php = { "php_cs_fixer" },
-        -- WordPress-tagged PHP files (see plugins/wordpress.lua): use phpcbf with the
-        -- WordPress ruleset instead of php_cs_fixer, since WPCS and PSR disagree on style
+        -- all php formatted with the WordPress ruleset (see plugins/wordpress.lua for
+        -- how "php.wp" gets tagged) -- kept as two entries so a deliberately non-WP
+        -- project can repoint just one line
+        php = { "phpcbf" },
         ["php.wp"] = { "phpcbf" },
         -- java: no reliable standalone CLI in conform's registry; falls back to jdtls' own
         -- formatting via `format_on_save.lsp_fallback` below.

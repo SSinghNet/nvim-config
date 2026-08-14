@@ -3,8 +3,8 @@ return {
   config = function()
     local lint = require("lint")
 
-    -- WordPress-tagged PHP files ("php.wp", see plugins/wordpress.lua) get an extra
-    -- --standard=WordPress flag; plain php files keep phpcs' default standard
+    -- all php linted with the WordPress ruleset -- see plugins/wordpress.lua for how
+    -- "php.wp" gets tagged; plain php uses the same standard too
     local phpcs_wordpress = vim.deepcopy(lint.linters.phpcs)
     table.insert(phpcs_wordpress.args, #phpcs_wordpress.args, "--standard=WordPress")
     lint.linters.phpcs_wordpress = phpcs_wordpress
@@ -16,7 +16,7 @@ return {
         javascriptreact = { "eslint" },
         typescriptreact = { "eslint" },
         ["javascript.wp"] = { "eslint" },
-        php = { "phpcs" },
+        php = { "phpcs_wordpress" },
         ["php.wp"] = { "phpcs_wordpress" },
         groovy = { "npm-groovy-lint" },
         kotlin = { "ktlint" },
