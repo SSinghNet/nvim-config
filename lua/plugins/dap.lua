@@ -5,6 +5,7 @@ return {
     "nvim-neotest/nvim-nio",
     "jay-babu/mason-nvim-dap.nvim",
     "theHamsta/nvim-dap-virtual-text",
+    "mxsdev/nvim-dap-vscode-js", -- Node/Next.js/browser JS debugging (pwa-node/pwa-chrome adapters)
   },
   keys = {
     { "<leader>db", function() require("dap").toggle_breakpoint() end, desc = "Toggle breakpoint" },
@@ -37,6 +38,53 @@ return {
       ensure_installed = { "delve", "python", "codelldb", "php", "kotlin" },
       automatic_installation = true,
     })
+
+    -- Node/Next.js/browser debugging: js-debug-adapter is installed via
+    -- mason-tool-installer (plugins/mason.lua) rather than mason-nvim-dap, since
+    -- mason-nvim-dap has no built-in source mapping for it (same reasoning as
+    -- Java's jdtls, wired separately in plugins/jdtls.lua).
+    -- debugger_cmd takes precedence over debugger_path/node_path and just runs the
+    -- Mason-generated "js-debug-adapter" shim on $PATH -- nvim-dap-vscode-js's own
+    -- default entrypoint resolution (debugger_path .. "/out/src/vsDebugServer.js")
+    -- assumes a from-source vscode-js-debug build and does NOT match Mason's package
+    -- layout, so debugger_path alone would fail to find the entrypoint.
+    require("dap-vscode-js").setup({
+      node_path = "node",
+      debugger_path = vim.fn.stdpath("data") .. "/mason/packages/js-debug-adapter",
+      debugger_cmd = { "js-debug-adapter" },
+      adapters = { "pwa-node", "pwa-chrome", "node-terminal" },
+    })
+
+    for _, language in ipairs({ "javascript", "typescript", "javascriptreact", "typescriptreact" }) do
+      dap.configurations[language] = {
+        {
+          type = "pwa-node",
+          request = "launch",
+          name = "Launch file",
+          program = "${file}",
+          cwd = "${workspaceFolder}",
+        },
+        {
+          type = "pwa-node",
+          request = "attach",
+          name = "Attach to process",
+          processId = require("dap.utils").pick_process,
+          cwd = "${workspaceFolder}",
+        },
+        {
+          -- for `next dev`/any dev server: run it externally with
+          -- `node --inspect node_modules/.bin/next dev` (or NODE_OPTIONS=--inspect),
+          -- then attach here
+          type = "pwa-node",
+          request = "attach",
+          name = "Attach to Next.js (port 9229)",
+          port = 9229,
+          restart = true,
+          cwd = "${workspaceFolder}",
+          skipFiles = { "<node_internals>/**", "**/node_modules/**" },
+        },
+      }
+    end
 
     -- best-effort mainClass guess: strip src/main/kotlin/, turn the path into a
     -- dotted package, and append "Kt" (Kotlin's default facade-class naming for

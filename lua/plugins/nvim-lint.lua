@@ -16,6 +16,8 @@ return {
         javascriptreact = { "eslint" },
         typescriptreact = { "eslint" },
         ["javascript.wp"] = { "eslint" },
+        css = { "stylelint" },
+        scss = { "stylelint" },
         php = { "phpcs_wordpress" },
         ["php.wp"] = { "phpcs_wordpress" },
         groovy = { "npm-groovy-lint" },

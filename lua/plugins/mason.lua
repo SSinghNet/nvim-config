@@ -22,6 +22,11 @@ return {
 				"npm-groovy-lint",
 				-- required by nvim-treesitter (main branch) to compile parsers
 				"tree-sitter-cli",
+				-- CSS linter (see plugins/nvim-lint.lua) and Node/Next.js debug adapter
+				-- (see plugins/dap.lua) -- not LSP servers, so they go here rather than
+				-- mason-lspconfig's ensure_installed
+				"stylelint",
+				"js-debug-adapter",
 			},
 		})
 	end,
