@@ -22,7 +22,30 @@ vim.keymap.set('n', '<M-z>', function() vim.wo.wrap = not vim.wo.wrap end, opts)
 -- (reuses the same terminal buffer across toggles instead of spawning a new tab)
 local term_buf = nil
 local prev_buf = nil
+
+-- Claude's panel (winfixbuf, see config/options.lua) raises E1513 if you try
+-- to swap its buffer, and nvim-tree's file browser shouldn't be clobbered
+-- either -- find a different window for the scratch terminal instead.
+local function find_window_for_terminal()
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if not vim.wo[win].winfixbuf and vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= "NvimTree" then
+            return win
+        end
+    end
+    return nil
+end
+
 local function toggle_terminal()
+    local cur_win = vim.api.nvim_get_current_win()
+    if vim.wo[cur_win].winfixbuf or vim.bo[vim.api.nvim_win_get_buf(cur_win)].filetype == "NvimTree" then
+        local target = find_window_for_terminal()
+        if target then
+            vim.api.nvim_set_current_win(target)
+        else
+            vim.cmd('vsplit')
+        end
+    end
+
     local cur_buf = vim.api.nvim_get_current_buf()
 
     if term_buf and cur_buf == term_buf then
