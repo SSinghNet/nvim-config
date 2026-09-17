@@ -42,7 +42,12 @@ local function toggle_terminal()
         if target then
             vim.api.nvim_set_current_win(target)
         else
+            -- vsplit inherits the CURRENT (excluded) window's buffer into the
+            -- new split -- without :enew, cur_buf below would capture nvim-tree's
+            -- or Claude's own buffer as "prev_buf", and toggling back would write
+            -- that buffer into this window instead of a genuine previous file.
             vim.cmd('vsplit')
+            vim.cmd('enew')
         end
     end
 
@@ -115,11 +120,22 @@ vim.keymap.set('n', '<leader>?', '<cmd>WhichKey<CR>', { noremap = true, silent =
 -- autocmd to skip its Claude-panel auto-correction while a manual resize is
 -- in flight -- otherwise every <C-Left>/<C-Right> press just gets fought and
 -- undone by that autocmd snapping Claude back to its 30% target.
+-- A held key (OS key-repeat) fires this many times faster than 100ms apart;
+-- each press cancels the previous pending timer so the flag only clears
+-- 100ms after the LAST press, not the first one in the burst.
+local resize_timer = nil
 local function manual_resize(cmd)
     return function()
         vim.g.manually_resizing_window = true
         vim.cmd(cmd)
-        vim.defer_fn(function() vim.g.manually_resizing_window = false end, 100)
+        if resize_timer then
+            resize_timer:stop()
+            resize_timer:close()
+        end
+        resize_timer = vim.defer_fn(function()
+            vim.g.manually_resizing_window = false
+            resize_timer = nil
+        end, 100)
     end
 end
 vim.keymap.set('n', '<C-Up>', manual_resize('resize -2'), opts)

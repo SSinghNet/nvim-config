@@ -17,6 +17,18 @@ return {
       -- window showing this buffer to an adjacent one first, same approach
       -- as the <leader>bd keymap in config/keymaps.lua.
       close_command = function(bufnr)
+        -- Defense in depth: this buffer normally can't be Claude's own
+        -- terminal (unlisted, never shown as a bufferline tab), but if any
+        -- window displaying it is winfixbuf-protected, BufferLineCyclePrev
+        -- there would fail silently (pcall) and the bdelete! below would
+        -- then close that protected window as a side effect -- the same
+        -- failure class this fix exists to prevent, just relocated.
+        for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+          if vim.wo[win].winfixbuf then
+            vim.notify("Can't close: shown in a protected window", vim.log.levels.WARN, { title = "bufferline" })
+            return
+          end
+        end
         for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
           vim.api.nvim_win_call(win, function()
             pcall(vim.cmd, "BufferLineCyclePrev")
