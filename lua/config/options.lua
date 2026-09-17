@@ -92,11 +92,25 @@ vim.cmd [[
   hi link @keyword Keyword
 ]]
 
+-- Named + cleared so re-sourcing this file (config-reload keymap, `:so %`,
+-- any lazy-reload path) replaces these autocmds instead of stacking a second
+-- copy of each one alongside the first (harmless for most of these, but the
+-- WinResized handler below would then run its whole body twice per resize).
+local options_augroup = vim.api.nvim_create_augroup("UserOptions", { clear = true })
+
 vim.api.nvim_create_autocmd("FileType", {
+  group = options_augroup,
   callback = function()
     pcall(vim.treesitter.start)
   end,
 })
+
+-- Single source of truth for "is this Claude's terminal buffer" -- used by
+-- TermOpen/BufWinEnter below and by the WinResized handler further down, so
+-- the buftype check can't be forgotten by a future caller of either.
+local function is_claude_term(buf)
+  return vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") ~= nil
+end
 
 -- nvim-tree's "eject" self-protection (default on) reopens itself and shoves
 -- whatever file you just :e'd elsewhere whenever its own buffer gets replaced.
@@ -112,7 +126,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- fires exactly when a buffer becomes visible in a window, so pair both
 -- rather than relying solely on the later WinResized reassertion below.
 local function protect_claude_win(buf)
-  if vim.api.nvim_buf_get_name(buf):match("claude") then
+  if is_claude_term(buf) then
     local winid = vim.fn.bufwinid(buf)
     if winid ~= -1 then
       vim.wo[winid].winfixbuf = true
@@ -121,16 +135,16 @@ local function protect_claude_win(buf)
 end
 
 vim.api.nvim_create_autocmd("TermOpen", {
+  group = options_augroup,
   callback = function(args)
     protect_claude_win(args.buf)
   end,
 })
 
 vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = options_augroup,
   callback = function(args)
-    if vim.bo[args.buf].buftype == "terminal" then
-      protect_claude_win(args.buf)
-    end
+    protect_claude_win(args.buf)
   end,
 })
 
@@ -148,6 +162,7 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 -- original bug this autocmd was written to fix) -- so in that case only
 -- rescue Claude when it's squeezed BELOW target, never shrink it.
 vim.api.nvim_create_autocmd("WinResized", {
+  group = options_augroup,
   callback = function()
     -- Skip while a manual <C-Left>/<C-Right>/<C-Up>/<C-Down> resize
     -- (config/keymaps.lua) is in flight, or the shrink-Claude-to-target
@@ -164,7 +179,7 @@ vim.api.nvim_create_autocmd("WinResized", {
     local claude_win, tree_win, other_wins = nil, nil, 0
     for _, win in ipairs(wins) do
       local buf = vim.api.nvim_win_get_buf(win)
-      if vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") then
+      if is_claude_term(buf) then
         claude_win = win
       elseif vim.bo[buf].filetype == "NvimTree" then
         tree_win = win
