@@ -106,13 +106,30 @@ vim.api.nvim_create_autocmd("FileType", {
 -- -- silently replacing Claude's live session with a text file. winfixbuf
 -- makes the window itself refuse any buffer swap, for any caller, not just
 -- nvim-tree's picker.
+-- TermOpen fires at buffer/job creation, which can precede the buffer
+-- actually being attached to a window (bufwinid would be -1 then, e.g. if
+-- snacks.win creates the terminal job before displaying it) -- BufWinEnter
+-- fires exactly when a buffer becomes visible in a window, so pair both
+-- rather than relying solely on the later WinResized reassertion below.
+local function protect_claude_win(buf)
+  if vim.api.nvim_buf_get_name(buf):match("claude") then
+    local winid = vim.fn.bufwinid(buf)
+    if winid ~= -1 then
+      vim.wo[winid].winfixbuf = true
+    end
+  end
+end
+
 vim.api.nvim_create_autocmd("TermOpen", {
   callback = function(args)
-    if vim.api.nvim_buf_get_name(args.buf):match("claude") then
-      local winid = vim.fn.bufwinid(args.buf)
-      if winid ~= -1 then
-        vim.wo[winid].winfixbuf = true
-      end
+    protect_claude_win(args.buf)
+  end,
+})
+
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  callback = function(args)
+    if vim.bo[args.buf].buftype == "terminal" then
+      protect_claude_win(args.buf)
     end
   end,
 })
@@ -128,7 +145,12 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- rest, ballooning it well past its own configured width.
 vim.api.nvim_create_autocmd("WinResized", {
   callback = function()
-    local wins = vim.api.nvim_list_wins()
+    -- nvim_list_wins() is global across ALL tabpages, not just the current
+    -- one -- with it, "only 2 windows" could mean 2 total across every tab,
+    -- silently never firing whenever any other tab has anything open even
+    -- though tree+Claude are genuinely alone together in THIS tab. Scope to
+    -- the current tabpage instead.
+    local wins = vim.api.nvim_tabpage_list_wins(0)
     for _, win in ipairs(wins) do
       local buf = vim.api.nvim_win_get_buf(win)
       if vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") then
