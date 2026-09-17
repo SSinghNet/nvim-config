@@ -139,37 +139,56 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 -- windows to redistribute (e.g. only nvim-tree + the Claude panel are open
 -- and a file gets opened by splitting the tree window), it violates
 -- 'winfixwidth' on Claude's panel as a last resort and squeezes it thin.
--- Only rescue it when it's been squeezed BELOW target -- forcing it back
--- down to target whenever it's wider (e.g. right after nvim-tree opens
--- alongside it) leaves nvim-tree as the only other window to absorb the
--- rest, ballooning it well past its own configured width.
+--
+-- Whether Claude should ever be shrunk back to target depends on who else
+-- is in the tab: if a real file-editing window exists, reclaiming Claude's
+-- excess width is correct (that space should go to the file window). But if
+-- nvim-tree is the ONLY other window, forcing Claude down leaves nvim-tree
+-- as the sole beneficiary, ballooning it past its own configured width (the
+-- original bug this autocmd was written to fix) -- so in that case only
+-- rescue Claude when it's squeezed BELOW target, never shrink it.
 vim.api.nvim_create_autocmd("WinResized", {
   callback = function()
     -- nvim_list_wins() is global across ALL tabpages, not just the current
-    -- one -- with it, "only 2 windows" could mean 2 total across every tab,
-    -- silently never firing whenever any other tab has anything open even
-    -- though tree+Claude are genuinely alone together in THIS tab. Scope to
-    -- the current tabpage instead.
+    -- one -- with it, "only nvim-tree + Claude" could be true in THIS tab
+    -- while still failing to match because some other tab has windows open.
+    -- Scope to the current tabpage instead.
     local wins = vim.api.nvim_tabpage_list_wins(0)
+    local claude_win, tree_win, other_wins = nil, nil, 0
     for _, win in ipairs(wins) do
       local buf = vim.api.nvim_win_get_buf(win)
       if vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") then
-        vim.wo[win].winfixbuf = true -- reasserted defensively; see TermOpen autocmd above
-        local target = math.floor(vim.o.columns * 0.30)
-        if vim.api.nvim_win_get_width(win) < target - 2 then
-          vim.api.nvim_win_set_width(win, target)
-        end
-      elseif vim.bo[buf].filetype == "NvimTree" and #wins == 2 and vim.api.nvim_win_get_width(win) > 60 then
-        -- nvim-tree's own self-heal (view.reposition_window()) only runs when
-        -- nvim-tree itself opens/closes, not when a sibling window like Claude's
-        -- panel claims a fixed width -- with only these two windows open, the
-        -- leftover space above lands here instead of on nvim-tree's own default
-        -- width. Gated to exactly 2 windows and a big jump (>60) so this never
-        -- fights the <C-Left>/<C-Right> manual resize keymaps (config/keymaps.lua).
-        pcall(function()
-          require("nvim-tree.view").reposition_window()
-        end)
+        claude_win = win
+      elseif vim.bo[buf].filetype == "NvimTree" then
+        tree_win = win
+      else
+        other_wins = other_wins + 1
       end
+    end
+
+    if claude_win then
+      vim.wo[claude_win].winfixbuf = true -- reasserted defensively; see TermOpen autocmd above
+      local target = math.floor(vim.o.columns * 0.30)
+      local width = vim.api.nvim_win_get_width(claude_win)
+      if other_wins > 0 then
+        if math.abs(width - target) > 2 then
+          vim.api.nvim_win_set_width(claude_win, target)
+        end
+      elseif width < target - 2 then
+        vim.api.nvim_win_set_width(claude_win, target)
+      end
+    end
+
+    if tree_win and #wins == 2 and vim.api.nvim_win_get_width(tree_win) > 60 then
+      -- nvim-tree's own self-heal (view.reposition_window()) only runs when
+      -- nvim-tree itself opens/closes, not when a sibling window like Claude's
+      -- panel claims a fixed width -- with only these two windows open, the
+      -- leftover space above lands here instead of on nvim-tree's own default
+      -- width. Gated to exactly 2 windows and a big jump (>60) so this never
+      -- fights the <C-Left>/<C-Right> manual resize keymaps (config/keymaps.lua).
+      pcall(function()
+        require("nvim-tree.view").reposition_window()
+      end)
     end
   end,
 })
