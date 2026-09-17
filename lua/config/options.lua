@@ -149,6 +149,13 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
 -- rescue Claude when it's squeezed BELOW target, never shrink it.
 vim.api.nvim_create_autocmd("WinResized", {
   callback = function()
+    -- Skip while a manual <C-Left>/<C-Right>/<C-Up>/<C-Down> resize
+    -- (config/keymaps.lua) is in flight, or the shrink-Claude-to-target
+    -- branch below just fights and undoes the user's own resize.
+    if vim.g.manually_resizing_window then
+      return
+    end
+
     -- nvim_list_wins() is global across ALL tabpages, not just the current
     -- one -- with it, "only nvim-tree + Claude" could be true in THIS tab
     -- while still failing to match because some other tab has windows open.

@@ -111,10 +111,21 @@ vim.keymap.set('n', '<leader>?', '<cmd>WhichKey<CR>', { noremap = true, silent =
 
 -- Resize with arrows
 -- delta: 2 lines
-vim.keymap.set('n', '<C-Up>', ':resize -2<CR>', opts)
-vim.keymap.set('n', '<C-Down>', ':resize +2<CR>', opts)
-vim.keymap.set('n', '<C-Left>', ':vertical resize -2<CR>', opts)
-vim.keymap.set('n', '<C-Right>', ':vertical resize +2<CR>', opts)
+-- vim.g.manually_resizing_window tells config/options.lua's WinResized
+-- autocmd to skip its Claude-panel auto-correction while a manual resize is
+-- in flight -- otherwise every <C-Left>/<C-Right> press just gets fought and
+-- undone by that autocmd snapping Claude back to its 30% target.
+local function manual_resize(cmd)
+    return function()
+        vim.g.manually_resizing_window = true
+        vim.cmd(cmd)
+        vim.defer_fn(function() vim.g.manually_resizing_window = false end, 100)
+    end
+end
+vim.keymap.set('n', '<C-Up>', manual_resize('resize -2'), opts)
+vim.keymap.set('n', '<C-Down>', manual_resize('resize +2'), opts)
+vim.keymap.set('n', '<C-Left>', manual_resize('vertical resize -2'), opts)
+vim.keymap.set('n', '<C-Right>', manual_resize('vertical resize +2'), opts)
 
 -----------------
 -- Visual mode --
