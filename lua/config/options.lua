@@ -98,6 +98,25 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- nvim-tree's "eject" self-protection (default on) reopens itself and shoves
+-- whatever file you just :e'd elsewhere whenever its own buffer gets replaced.
+-- Its window-picker already excludes buftype=terminal by default, but when
+-- nvim-tree + Claude's panel are the ONLY two windows, excluding the terminal
+-- leaves zero "usable" windows, so it falls back to the current window anyway
+-- -- silently replacing Claude's live session with a text file. winfixbuf
+-- makes the window itself refuse any buffer swap, for any caller, not just
+-- nvim-tree's picker.
+vim.api.nvim_create_autocmd("TermOpen", {
+  callback = function(args)
+    if vim.api.nvim_buf_get_name(args.buf):match("claude") then
+      local winid = vim.fn.bufwinid(args.buf)
+      if winid ~= -1 then
+        vim.wo[winid].winfixbuf = true
+      end
+    end
+  end,
+})
+
 -- claudecode.nvim's terminal split has no self-healing width like nvim-tree's
 -- view.resize() does. When Vim's window equalizer runs out of flexible
 -- windows to redistribute (e.g. only nvim-tree + the Claude panel are open
@@ -113,6 +132,7 @@ vim.api.nvim_create_autocmd("WinResized", {
     for _, win in ipairs(wins) do
       local buf = vim.api.nvim_win_get_buf(win)
       if vim.bo[buf].buftype == "terminal" and vim.api.nvim_buf_get_name(buf):match("claude") then
+        vim.wo[win].winfixbuf = true -- reasserted defensively; see TermOpen autocmd above
         local target = math.floor(vim.o.columns * 0.30)
         if vim.api.nvim_win_get_width(win) < target - 2 then
           vim.api.nvim_win_set_width(win, target)
