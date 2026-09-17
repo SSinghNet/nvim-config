@@ -4,9 +4,9 @@ return {
   config = function()
     require("conform").setup({
       formatters_by_ft = {
-        go = { "gofmt" },
+        go = { "gofmt" }, -- ships with the Go toolchain, intentionally excluded from mason.lua like rustfmt
         rust = { "rustfmt" },
-        c = { "clang-format" },
+        c = { "clang-format" }, -- not currently installed on this machine or in mason.lua; install via brew/Xcode CLT for C formatting to work
         lua = { "stylua" },
         python = { "black" },
         javascript = { "prettier" },

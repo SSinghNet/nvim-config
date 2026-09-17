@@ -5,6 +5,7 @@ return {
     "mason-org/mason-lspconfig.nvim",
     "bitpoke/wordpress.nvim",
     "b0o/schemastore.nvim",
+    "saghen/blink.cmp",
   },
   config = function()
     require("mason-lspconfig").setup({
@@ -17,7 +18,10 @@ return {
         "tailwindcss", "eslint", "emmet_ls",
       },
       automatic_enable = {
-        exclude = { "rust_analyzer", "jdtls" },
+        -- gradle_ls excluded: groovyls already owns groovy/build.gradle buffers, and
+        -- both attaching to the same files is redundant (same class of conflict as
+        -- rust_analyzer/jdtls below)
+        exclude = { "rust_analyzer", "jdtls", "gradle_ls" },
       },
     })
 

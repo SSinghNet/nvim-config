@@ -67,8 +67,8 @@ vim.opt.splitright = true           -- open new horizontal splits right
 -- under every window (even winfixwidth ones like nvim-tree/the Claude panel)
 -- so rebalancing can't crush one down to near-nothing.
 vim.opt.winminwidth = 20
--- vim.opt.termguicolors = true        -- enable 24-bit RGB color in the TUI
 vim.opt.showmode = false            -- we are experienced, wo don't need the "-- INSERT --" mode hint
+vim.opt.signcolumn = "yes"          -- always reserve the sign gutter so diagnostics/gitsigns don't shift text
 
 -- Searching
 vim.opt.incsearch = true            -- search as characters are entered

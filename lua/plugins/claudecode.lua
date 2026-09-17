@@ -19,7 +19,7 @@ return {
     "ClaudeCodeCloseAllDiffs",
   },
   keys = {
-    { "<leader>a", nil, desc = "AI/Claude Code" },
+    -- group label for <leader>a lives in plugins/which-key.lua
     { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
     { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
     { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
@@ -31,7 +31,7 @@ return {
       "<leader>as",
       "<cmd>ClaudeCodeTreeAdd<cr>",
       desc = "Add file",
-      ft = { "NvimTree", "neo-tree", "oil", "minifiles", "netrw", "snacks_picker_list" },
+      ft = { "NvimTree" }, -- the only tree/explorer plugin actually installed in this config
     },
     -- Diff management
     { "<leader>aa", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Accept diff" },

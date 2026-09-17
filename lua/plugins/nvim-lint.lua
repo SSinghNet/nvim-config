@@ -10,7 +10,7 @@ return {
     lint.linters.phpcs_wordpress = phpcs_wordpress
 
     lint.linters_by_ft = {
-        go = { "golangcilint" },
+        go = { "golangcilint" }, -- not currently installed on this machine or in mason.lua; install golangci-lint separately for Go linting to work
         javascript = { "eslint" },
         typescript = { "eslint" },
         javascriptreact = { "eslint" },

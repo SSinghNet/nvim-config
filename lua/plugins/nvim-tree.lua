@@ -52,8 +52,8 @@ return {
     -- Focus tree
     { "<leader>o", "<cmd>NvimTreeFocus<CR>", desc = "Focus NvimTree" },
 
-    -- Find current file in tree
-    { "<leader>f", "<cmd>NvimTreeFindFile<CR>", desc = "Find file in NvimTree" },
+    -- Find current file in tree (fe, not bare f -- f is telescope's find group, see plugins/telescope.lua)
+    { "<leader>fe", "<cmd>NvimTreeFindFile<CR>", desc = "Find file in explorer" },
   },
 }
 

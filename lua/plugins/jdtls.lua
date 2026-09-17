@@ -1,7 +1,7 @@
 return {
   "mfussenegger/nvim-jdtls",
   ft = "java",
-  dependencies = { "JavaHello/spring-boot.nvim" },
+  dependencies = { "JavaHello/spring-boot.nvim", "mason-org/mason.nvim" },
   config = function()
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "java",
