@@ -89,7 +89,99 @@ local function toggle_terminal()
     vim.cmd('startinsert')
 end
 
-vim.keymap.set('n', '<leader>t', toggle_terminal, { noremap = true, silent = true, desc = 'Toggle terminal' })
+-- Toggle a terminal in its own tab page (<leader>t swaps one into the current
+-- window instead). Toggling off closes the tab but only hides the shell: the
+-- terminal buffer and its job survive and are reattached on the next toggle.
+-- The tab is marked with t:term_tab so the toggle can tell "am I in it" apart
+-- without comparing buffers, and so a tab left behind with gT is found again.
+local term_tab_buf = nil
+local term_tab_origin = nil
+
+local function find_term_tab()
+    for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+        if pcall(vim.api.nvim_tabpage_get_var, tab, 'term_tab') then
+            return tab
+        end
+    end
+    return nil
+end
+
+local function toggle_terminal_tab()
+    local cur_tab = vim.api.nvim_get_current_tabpage()
+
+    if vim.t.term_tab then
+        -- can't close the last tab, but the terminal tab is never the only one
+        -- (it's always opened from another) unless the user closed the rest
+        local origin = term_tab_origin
+        if #vim.api.nvim_list_tabpages() > 1 then
+            vim.cmd('tabclose')
+            if origin and vim.api.nvim_tabpage_is_valid(origin) then
+                vim.api.nvim_set_current_tabpage(origin)
+            end
+        end
+        return
+    end
+
+    term_tab_origin = cur_tab
+    local existing = find_term_tab()
+    if existing then
+        vim.api.nvim_set_current_tabpage(existing)
+    elseif term_tab_buf and vim.api.nvim_buf_is_valid(term_tab_buf) then
+        -- `tab sbuffer`, not `tabnew` + set_buf: tabnew would leave a stray
+        -- [No Name] buffer behind in the bufferline
+        vim.cmd('tab sbuffer ' .. term_tab_buf)
+        vim.t.term_tab = true
+    else
+        vim.cmd('tabnew')
+        vim.t.term_tab = true
+        vim.cmd('terminal')
+        term_tab_buf = vim.api.nvim_get_current_buf()
+    end
+    vim.cmd('startinsert')
+end
+
+-- Typing `exit` ends the shell. Nvim 0.11 deletes the terminal buffer itself
+-- on a clean exit, BEFORE a buffer-local TermClose handler would run, so this
+-- has to be global and compare buffer numbers. Deleting the buffer only closes
+-- its window: with nvim-tree synced into the tab, that leaves a stray tab
+-- holding just the tree (which then balloons to full width), so close the
+-- whole tab. On a non-zero exit the buffer survives and is deleted here too.
+vim.api.nvim_create_autocmd('TermClose', {
+    group = vim.api.nvim_create_augroup('UserTermTab', { clear = true }),
+    callback = function(args)
+        if args.buf ~= term_tab_buf then
+            return
+        end
+        term_tab_buf = nil
+        vim.schedule(function()
+            local tab = find_term_tab()
+            if tab and #vim.api.nvim_list_tabpages() > 1 then
+                local was_current = tab == vim.api.nvim_get_current_tabpage()
+                -- `:tabclose N` closes tab N without switching to it first
+                vim.cmd('tabclose ' .. vim.api.nvim_tabpage_get_number(tab))
+                if was_current and term_tab_origin and vim.api.nvim_tabpage_is_valid(term_tab_origin) then
+                    vim.api.nvim_set_current_tabpage(term_tab_origin)
+                end
+            end
+            if vim.api.nvim_buf_is_valid(args.buf) then
+                vim.cmd('bdelete! ' .. args.buf)
+            end
+        end)
+    end,
+})
+
+vim.keymap.set('n', '<leader>y', toggle_terminal_tab, { noremap = true, silent = true, desc = 'Toggle terminal (new tab)' })
+
+-- <leader>t swaps a terminal into the current window, which is fine in the
+-- editor tab but would replace one of a Diffview tab's diff panes. There (and
+-- inside the <leader>y terminal tab itself) it acts like <leader>y instead.
+vim.keymap.set('n', '<leader>t', function()
+    if vim.t.term_tab or require('config.tabs').in_diff_tab() then
+        toggle_terminal_tab()
+    else
+        toggle_terminal()
+    end
+end, { noremap = true, silent = true, desc = 'Toggle terminal' })
 
 -- Close the current buffer (same as clicking the x on a bufferline tab).
 -- Switches to the adjacent buffer first so the window doesn't fall back to

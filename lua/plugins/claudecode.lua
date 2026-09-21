@@ -19,6 +19,23 @@ local function safe_cmd(cmd)
   end
 end
 
+-- Claude's panel belongs to the editor tab. Its toggle can't tell a panel
+-- shown in another tab from one shown here, so from a Diffview / terminal tab
+-- a plain toggle would close the editor tab's panel instead of reaching it.
+-- From those tabs, switch to the editor tab first; `from_workspace` (default:
+-- `cmd`) is what to run when a switch happened.
+local function in_editor_tab(cmd, from_workspace)
+  local run = safe_cmd(cmd)
+  local run_after_switch = from_workspace and safe_cmd(from_workspace) or run
+  return function()
+    if require("config.tabs").to_editor_tab() then
+      run_after_switch()
+    else
+      run()
+    end
+  end
+end
+
 return {
   "coder/claudecode.nvim",
   dependencies = { "folke/snacks.nvim" },
@@ -41,10 +58,10 @@ return {
   },
   keys = {
     -- group label for <leader>a lives in plugins/which-key.lua
-    { "<leader>ac", safe_cmd("ClaudeCode"), desc = "Toggle Claude" },
-    { "<leader>af", safe_cmd("ClaudeCodeFocus"), desc = "Focus Claude" },
-    { "<leader>ar", safe_cmd("ClaudeCode --resume"), desc = "Resume Claude" },
-    { "<leader>aC", safe_cmd("ClaudeCode --continue"), desc = "Continue Claude" },
+    { "<leader>ac", in_editor_tab("ClaudeCode", "ClaudeCodeFocus"), desc = "Toggle Claude" },
+    { "<leader>af", in_editor_tab("ClaudeCodeFocus"), desc = "Focus Claude" },
+    { "<leader>ar", in_editor_tab("ClaudeCode --resume"), desc = "Resume Claude" },
+    { "<leader>aC", in_editor_tab("ClaudeCode --continue"), desc = "Continue Claude" },
     { "<leader>am", safe_cmd("ClaudeCodeSelectModel"), desc = "Select Claude model" },
     { "<leader>ab", safe_cmd("ClaudeCodeAdd %"), desc = "Add current buffer" },
     { "<leader>as", safe_cmd("ClaudeCodeSend"), mode = "v", desc = "Send to Claude" },

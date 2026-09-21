@@ -14,6 +14,10 @@ return {
         sync = {
           open = true,
           close = true,
+          -- tabs that are a tool's own full-tab workspace (<leader>y terminal,
+          -- Diffview) shouldn't grow a file explorer beside them; matched
+          -- against the new tab's current buffer name/filetype
+          ignore = { "^term://", "^diffview://", "^Diffview" },
         },
       },
       update_focused_file = {
@@ -50,7 +54,8 @@ return {
     { "<leader>e", "<cmd>NvimTreeToggle<CR>", desc = "Toggle NvimTree" },
 
     -- Focus tree
-    { "<leader>o", "<cmd>NvimTreeFocus<CR>", desc = "Focus NvimTree" },
+    -- the tree lives in the editor tab, not in a Diffview / terminal tab
+    { "<leader>o", function() require("config.tabs").to_editor_tab(); vim.cmd("NvimTreeFocus") end, desc = "Focus NvimTree" },
 
     -- Find current file in tree (fe, not bare f -- f is telescope's find group, see plugins/telescope.lua)
     { "<leader>fe", "<cmd>NvimTreeFindFile<CR>", desc = "Find file in explorer" },
